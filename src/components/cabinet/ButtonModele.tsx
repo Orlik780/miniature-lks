@@ -4,7 +4,7 @@ import giftLogo from "../../assets/gift-card.png";
 
 export function ButtonModule() {
   return (
-    <div className="nav-links lk-module buttons-div">
+    <div className="lk-module refs-container">
       <a href="https://vk.com/padlhub" target="_blank">
         <img src={vkLogo} className="logo" alt="Vk" />
       </a>

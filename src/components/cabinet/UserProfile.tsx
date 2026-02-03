@@ -3,11 +3,12 @@ import type { UserProfile } from "../../utils/apiClient";
 
 interface UserProfileProps {
   profile: UserProfile;
+  openEditForm: () => void;
 }
 
-export function UserProfile({ profile }: UserProfileProps) {
+export function UserProfile({ profile, openEditForm }: UserProfileProps) {
   const { logout } = useAuth();
-  const fullName = [profile.lastName, profile.firstName, profile.middleName]
+  const fullName = [profile.lastName, profile.firstName]
     .filter(Boolean)
     .join(" ");
 
@@ -17,9 +18,9 @@ export function UserProfile({ profile }: UserProfileProps) {
 
   return (
     <div className="lk-module user-profile">
-      <div>
+      <div className="lk-main-usr-info">
         {profile.photo ? (
-          <img src={profile.photo} alt="Аватар" className="avatar" />
+          <img src={profile.photo} alt="Аватарка" className="avatar" />
         ) : (
           <div className="avatar-placeholder">
             <p>
@@ -28,18 +29,20 @@ export function UserProfile({ profile }: UserProfileProps) {
             </p>
           </div>
         )}
-        <h2 className="full-name">{fullName}</h2>{" "}
+        <div className="lk-usr-name-phone">
+          <p className="lk-text name">{fullName}</p>{" "}
+          <p className="lk-text phone">+{profile.phone}</p>
+        </div>
       </div>
-      <p className="lk-info-field">Телефон: +{profile.phone}</p>
-      {profile.email && <p className="lk-info-field">Email: {profile.email}</p>}
-      <p className="lk-info-field">Карта лояльности: {profile.loyaltyCard}</p>
-      <p className="lk-info-field">Категория: {profile.clientCategory.name}</p>
       <p className="lk-info-field">Баланс: {profile.deposit / 100} ₽</p>
-      <p>
-        <button onClick={handleLogout} className="logout-button">
+      <div className="lk-usr-inf-buttons">
+        <button onClick={openEditForm} className="button edit-btn">
+          Изменить
+        </button>
+        <button onClick={handleLogout} className="button logout-btn">
           Выйти
         </button>
-      </p>
+      </div>
     </div>
   );
 }
