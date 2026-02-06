@@ -1,7 +1,7 @@
 import { getCookie } from "./cookies";
 import { TENANT_KEY, API_BASE } from "../consts/api";
 
-export interface UserProfile {
+export interface UserProfileType {
   id: string;
   email: string | null;
   firstName: string;
@@ -19,6 +19,114 @@ export interface UserProfile {
   customFields: any[];
 }
 
+export interface Studio {
+  id: string;
+  name: string;
+  country: string;
+  city: string;
+  address: string;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+}
+
+export interface Grade {
+  id: string;
+  name: string;
+}
+
+export interface Trainer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  photo?: string;
+  grade?: Grade;
+  bio?: string;
+}
+
+export interface Direction {
+  id: number;
+  name: string;
+  description?: string | null;
+  photo?: string | null;
+  whatToTake?: string | null;
+  photoWeb?: string | null;
+  duration?: string | null;
+}
+
+export interface ExerciseType {
+  id: number;
+  name: string;
+  color: string;
+  format: string;
+}
+
+export interface Exercise {
+  id: string;
+  direction: Direction;
+  type: ExerciseType;
+  timeFrom: string;
+  timeTo: string;
+  clientsCount: number;
+  maxClientsCount: number;
+  girlsOnly: boolean;
+  studio: Studio;
+  room: Room;
+  trainers: Trainer[];
+  cancellationDeadline?: string | null;
+}
+
+export interface Booking {
+  id: string;
+  spot: number;
+  paymentType: string;
+  isCancelled: boolean;
+  cancellationReason?: string | null;
+  visitConfirmed: boolean;
+  exercise?: Exercise;
+  reviewRate?: number | null;
+  reviewComment?: string | null;
+  clientSubscriptionId?: string | null;
+  clientOneTimeId?: string | null;
+  cost: number;
+  transactionStatus?: {
+    transactionId: string;
+    transactionStatus: string;
+    cardPaymentStatus?: {
+      paymentId: string;
+      paymentUrl: string;
+      status: string;
+      originalStatus: string;
+      errorCode?: string | null;
+    } | null;
+  } | null;
+}
+
+export interface BookingsResponse {
+  content: Booking[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+  };
+  totalPages: number;
+  totalElements: number;
+  last: boolean;
+  first: boolean;
+  numberOfElements: number;
+  size: number;
+  number: number;
+  empty: boolean;
+}
+
 export interface UpdateProfileData {
   email: string | null;
   firstName: string | null;
@@ -28,8 +136,7 @@ export interface UpdateProfileData {
   sex: string | null;
 }
 
-
-export const fetchProfile = async (): Promise<UserProfile | null> => {
+export const fetchProfile = async (): Promise<UserProfileType | null> => {
   const token = getCookie(`${TENANT_KEY}AuthToken`);
   if (!token) return null;
 
@@ -58,8 +165,8 @@ export const fetchProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const updateProfile = async (
-  data: UpdateProfileData
-): Promise<UserProfile | null> => {
+  data: UpdateProfileData,
+): Promise<UserProfileType | null> => {
   const token = getCookie(`${TENANT_KEY}AuthToken`);
   if (!token) return null;
 
@@ -73,7 +180,7 @@ export const updateProfile = async (
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      }
+      },
     );
 
     if (!res.ok) {
@@ -81,9 +188,7 @@ export const updateProfile = async (
         return null;
       }
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "Ошибка обновления профиля"
-      );
+      throw new Error(errorData.message || "Ошибка обновления профиля");
     }
 
     return await res.json();
@@ -94,7 +199,7 @@ export const updateProfile = async (
 };
 
 export const uploadProfilePhoto = async (
-  file: File
+  file: File,
 ): Promise<string | null> => {
   const token = getCookie(`${TENANT_KEY}AuthToken`);
   if (!token) return null;
@@ -111,7 +216,7 @@ export const uploadProfilePhoto = async (
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      }
+      },
     );
 
     if (!res.ok) {
@@ -119,11 +224,9 @@ export const uploadProfilePhoto = async (
         return null;
       }
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "Ошибка загрузки фотографии"
-      );
+      throw new Error(errorData.message || "Ошибка загрузки фотографии");
     }
-    
+
     const result = await res.text();
     return result || null;
   } catch (err) {
@@ -157,3 +260,37 @@ export const uploadProfilePhoto = async (
     return null;
   }
 };*/
+
+export const uploadBookings = async (
+  includeCanceled: boolean,
+): Promise<BookingsResponse | null> => {
+  const token = getCookie(`${TENANT_KEY}AuthToken`);
+  if (!token) return null;
+
+  const url = includeCanceled
+    ? `${API_BASE}/end-user/api/v2/${TENANT_KEY}/bookings/history?includeCanceled=true&size=1000`
+    : `${API_BASE}/end-user/api/v2/${TENANT_KEY}/bookings?size=1000`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        return null;
+      }
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Ошибка загрузки занятий");
+    }
+
+    const result = await res.json();
+    return result || null;
+  } catch (err) {
+    console.error("Не удалось загрузить занятия:", err);
+    return null;
+  }
+};

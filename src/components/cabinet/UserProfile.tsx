@@ -1,8 +1,8 @@
 import { useAuth } from "../../context/AuthContext";
-import type { UserProfile } from "../../utils/apiClient";
+import type { UserProfileType } from "../../utils/apiClient";
 
 interface UserProfileProps {
-  profile: UserProfile;
+  profile: UserProfileType;
   openEditForm: () => void;
 }
 
@@ -35,6 +35,7 @@ export function UserProfile({ profile, openEditForm }: UserProfileProps) {
         </div>
       </div>
       <p className="lk-info-field">Баланс: {profile.deposit / 100} ₽</p>
+      <p className="lk-info-field">{profile.customFields[4].name}: {profile.customFields[4].value[0]}</p>
       <div className="lk-usr-inf-buttons">
         <button onClick={openEditForm} className="button edit-btn">
           Изменить
