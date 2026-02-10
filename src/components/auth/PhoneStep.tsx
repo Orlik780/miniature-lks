@@ -19,7 +19,7 @@ export function PhoneStep({ onSend, error, authPhone }: PhoneStepProps) {
       <p className="title">Войти или зарегистрироваться</p>
       <div className="phone-container">
         <PhoneInput value={phone} onChange={setPhone} />
-        {error && <p className="notification">{error}</p>}
+        
         <button
           className="button phone-button"
           onClick={handleSubmit}
@@ -28,6 +28,7 @@ export function PhoneStep({ onSend, error, authPhone }: PhoneStepProps) {
           Продолжить
         </button>
       </div>
+      {error && <p className="notification">{error}</p>}
     </>
   );
 }

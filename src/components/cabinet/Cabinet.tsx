@@ -10,8 +10,11 @@ import { BookingHistory } from "./BookingHistory";
 
 export function Cabinet() {
   const [profile, setProfile] = useState<UserProfileType | null>(null);
-  const [historyBookings, setHistoryBookings] = useState<BookingsResponse | null>(null);
-  const [activeBookings, setActiveBookings] = useState<BookingsResponse | null>(null);
+  const [historyBookings, setHistoryBookings] =
+    useState<BookingsResponse | null>(null);
+  const [activeBookings, setActiveBookings] = useState<BookingsResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isBookingHistoryOpen, setIsBookingHistoryOpen] = useState(false);
@@ -53,6 +56,18 @@ export function Cabinet() {
     const data = await fetchProfile();
     if (data) {
       setProfile(data);
+    }
+  };
+
+  const loadBookings = async () => {
+    const activeBookingsData = await uploadBookings(false);
+    if (activeBookingsData) {
+      setActiveBookings(activeBookingsData);
+    }
+
+    const historyBookingsData = await uploadBookings(true);
+    if (historyBookingsData) {
+      setHistoryBookings(historyBookingsData);
     }
   };
 
@@ -100,6 +115,7 @@ export function Cabinet() {
         activeBookings={activeBookings}
         historyBookings={historyBookings}
         openHistory={openBookingsHistory}
+        loadBookings={loadBookings}
       />
       <BookingHistory
         isOpen={isBookingHistoryOpen}

@@ -102,6 +102,7 @@ export interface Booking {
       errorCode?: string | null;
     } | null;
   } | null;
+  cancellationDeadline: string;
 }
 
 export interface BookingsResponse {
@@ -292,5 +293,36 @@ export const uploadBookings = async (
   } catch (err) {
     console.error("Не удалось загрузить занятия:", err);
     return null;
+  }
+};
+
+export const CancelBooking = async (bookingId: string): Promise<boolean> => {
+  const token = getCookie(`${TENANT_KEY}AuthToken`);
+  if (!token) return false;
+
+  const url = `${API_BASE}/end-user/api/v1/${TENANT_KEY}/bookings/${bookingId}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        return false;
+      }
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Ошибка отмены записи");
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Не удалось отменить запись:", err);
+    return false;
   }
 };

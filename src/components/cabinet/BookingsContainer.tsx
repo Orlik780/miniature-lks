@@ -5,12 +5,14 @@ interface BookingsContainerProps {
   activeBookings: BookingsResponse | null;
   historyBookings: BookingsResponse | null;
   openHistory: () => void;
+  loadBookings: () => void;
 }
 
 export function BookingsContainer({
   activeBookings,
   historyBookings,
   openHistory,
+  loadBookings
 }: BookingsContainerProps) {
   if (
     (!activeBookings || activeBookings.content.length === 0) &&
@@ -22,8 +24,8 @@ export function BookingsContainer({
       {activeBookings && activeBookings.content.length > 0 && (
         <div className="booking-container">
           <label>Активные записи</label>
-          {activeBookings.content.map((book, index) => (
-            <BookingCard key={index} booking={book} active={true} />
+          {activeBookings.content.map((book) => (
+            <BookingCard key={book.id} booking={book} active={true} loadBookings={loadBookings}/>
           ))}
         </div>
       )}
