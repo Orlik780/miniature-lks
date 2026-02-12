@@ -1,11 +1,11 @@
 import { useState } from "react";
 import type { Booking } from "../../utils/apiClient";
-import { CancelBooking } from "../../utils/apiClient";
+import { cancelBooking } from "../../utils/apiClient";
 
 interface BookingProps {
   booking: Booking;
   active: boolean;
-  loadBookings: () => void;
+  loadBookings?: () => void;
 }
 
 export function BookingCard({ booking, active, loadBookings }: BookingProps) {
@@ -18,8 +18,8 @@ export function BookingCard({ booking, active, loadBookings }: BookingProps) {
   const booking_time = `${booking.exercise?.timeFrom.slice(8, 10)}.${booking.exercise?.timeFrom.slice(5, 7)}.${booking.exercise?.timeFrom.slice(0, 4)} ${booking.exercise?.timeFrom.slice(11, 16)}-${booking.exercise?.timeTo.slice(11, 16)}`;
 
   const handleCancelClick = async () => {
-    const res = await CancelBooking(booking.id);
-    setCancelResult(res)
+    const res = await cancelBooking(booking.id);
+    setCancelResult(res);
   };
   return (
     <div className="booking-card">
@@ -37,11 +37,15 @@ export function BookingCard({ booking, active, loadBookings }: BookingProps) {
           <label className="booking-info-label">
             {active
               ? booking.transactionStatus?.transactionStatus === "PAID"
-                ? booking.cost / 100 + " ₽"
+                ? booking.paymentType == "SUBSCRIPTION"
+                  ? "Абонемент"
+                  : booking.cost / 100 + " ₽"
                 : "Не оплачено"
               : booking.isCancelled
                 ? "отменено"
-                : booking.cost / 100 + " ₽"}
+                : booking.paymentType == "SUBSCRIPTION"
+                  ? "Абонемент"
+                  : booking.cost / 100 + " ₽"}
           </label>
         </div>
       </div>
@@ -95,12 +99,19 @@ export function BookingCard({ booking, active, loadBookings }: BookingProps) {
                   </div>
                 ) : (
                   <>
-                    <label>{cancelResult? "Запись успешно отменена": "Во время отмены записи произошла ошибка"}</label>
-                    <button className="button"
+                    <label>
+                      {cancelResult
+                        ? "Запись успешно отменена"
+                        : "Во время отмены записи произошла ошибка"}
+                    </label>
+                    <button
+                      className="button"
                       onClick={() => {
-                        loadBookings();
+                        if (loadBookings) loadBookings();
                       }}
-                    >Ок</button>
+                    >
+                      Ок
+                    </button>
                   </>
                 )}
               </>

@@ -1,5 +1,5 @@
 import { getCookie } from "./cookies";
-import { TENANT_KEY, API_BASE } from "../consts/api";
+import { TENANT_KEY, API_BASE, SERV2} from "../consts/api";
 
 export interface UserProfileType {
   id: string;
@@ -17,6 +17,77 @@ export interface UserProfileType {
   loyaltyCard: string;
   clientCategory: { id: number; name: string };
   customFields: any[];
+}
+
+export interface SubscriptionAvailableStudios {
+  id: string;
+  name: string;
+}
+
+export interface SubscriptionAvailableTypes {
+  id: string;
+  name: string;
+}
+
+export interface SubscriptionAvailableDirections {
+  id: string;
+  name: string;
+}
+
+export interface Subscription {
+  subscriptionId: string;
+  name: string | null;
+  cost: 0;
+  type: string;
+  status: string;
+  purchaseDate: string;
+  autoActivationDate: string | null;
+  activationDate: string | null;
+  expirationDate: string | null;
+  holdUntil: string | null;
+  validityDays: number;
+  totalFreezeDays: number;
+  freezingDays: number;
+  freezeUsed: boolean;
+  hasStudioLimitation: boolean;
+  availableStudios: SubscriptionAvailableStudios[];
+  hasTypeLimitation: boolean;
+  availableTypes: SubscriptionAvailableTypes[];
+  hasDirectionLimitation: boolean;
+  availableDirections: SubscriptionAvailableDirections[];
+  hasDayLimitation: boolean;
+  hasTimeRangeLimitation: boolean;
+  variant: string;
+  visitsTotal: number;
+  visitsLeft: number;
+  timeLimitation: string;
+  minutes: number;
+  availableMinutes: number;
+  duration: string;
+  availableDays: string;
+}
+
+export interface SubscriptionResponse {
+  content: Subscription[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+  };
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  empty: boolean;
 }
 
 export interface Studio {
@@ -296,7 +367,7 @@ export const uploadBookings = async (
   }
 };
 
-export const CancelBooking = async (bookingId: string): Promise<boolean> => {
+export const cancelBooking = async (bookingId: string): Promise<boolean> => {
   const token = getCookie(`${TENANT_KEY}AuthToken`);
   if (!token) return false;
 
@@ -307,9 +378,9 @@ export const CancelBooking = async (bookingId: string): Promise<boolean> => {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({}),
     });
 
     if (!res.ok) {
@@ -326,3 +397,64 @@ export const CancelBooking = async (bookingId: string): Promise<boolean> => {
     return false;
   }
 };
+
+export const uploadSubscriptions =
+  async (): Promise<SubscriptionResponse | null> => {
+    const token = getCookie(`${TENANT_KEY}AuthToken`);
+    if (!token) return null;
+
+    const url = `${API_BASE}/end-user/api/v1/${TENANT_KEY}/subscriptions`;
+
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          return null;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Ошибка отмены записи");
+      }
+
+      const result = await res.json();
+      return result || null;
+    } catch (err) {
+      console.error("Не удалось отменить запись:", err);
+      return null;
+    }
+  };
+
+  export const fetchSubscriptioName =
+  async (subId: string, phone: string): Promise<string | null> => {
+
+    const url = `${SERV2}/get_sub_name?phone=${phone}&subId=${subId}`;
+
+    try {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          return null;
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Ошибка получения названия абика");
+      }
+
+      const result = await res.json();
+      return result.sertName || null;
+    } catch (err) {
+      console.error("Не получить название абика:", err);
+      return null;
+    }
+  };

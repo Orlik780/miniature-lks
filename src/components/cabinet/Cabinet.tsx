@@ -1,12 +1,23 @@
 import { useState, useEffect } from "react";
 import { UserProfile } from "./UserProfile";
-import { fetchProfile, uploadBookings } from "../../utils/apiClient";
-import type { UserProfileType, BookingsResponse } from "../../utils/apiClient";
+import {
+  fetchProfile,
+  uploadBookings,
+  uploadSubscriptions,
+} from "../../utils/apiClient";
+import type {
+  UserProfileType,
+  BookingsResponse,
+  SubscriptionResponse,
+  Subscription,
+} from "../../utils/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import { ButtonModule } from ".//ButtonModele";
 import { ProfileEditForm } from "./ProfileEditForm";
 import { BookingsContainer } from "./BookingsContainer";
 import { BookingHistory } from "./BookingHistory";
+import { SubscriptionsContainer } from "./SubscriptionsContainer";
+import { SubscriptionInformation } from "./SubscriptionInformation";
 
 export function Cabinet() {
   const [profile, setProfile] = useState<UserProfileType | null>(null);
@@ -15,9 +26,14 @@ export function Cabinet() {
   const [activeBookings, setActiveBookings] = useState<BookingsResponse | null>(
     null,
   );
+  const [userSubscriptions, setUserSubscriptions] =
+    useState<SubscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isBookingHistoryOpen, setIsBookingHistoryOpen] = useState(false);
+  const [isSubscriptionInfoOpen, SetSubscriptionInfoOpen] = useState(false);
+  const [currenSub, SetCurrenSub] = useState<Subscription | null>(null);
+  const [currenSubName, SetCurrenSubName] = useState<string>("Абонемент");
   const { logout } = useAuth();
 
   useEffect(() => {
@@ -41,6 +57,11 @@ export function Cabinet() {
         const historyBookingsData = await uploadBookings(true);
         if (historyBookingsData) {
           setHistoryBookings(historyBookingsData);
+        }
+
+        const userSubscriptionsData = await uploadSubscriptions();
+        if (userSubscriptionsData) {
+          setUserSubscriptions(userSubscriptionsData);
         }
       } catch (error) {
         console.error("Ошибка загрузки данных:", error);
@@ -69,6 +90,11 @@ export function Cabinet() {
     if (historyBookingsData) {
       setHistoryBookings(historyBookingsData);
     }
+
+    const userSubscriptionsData = await uploadSubscriptions();
+    if (userSubscriptionsData) {
+      setUserSubscriptions(userSubscriptionsData);
+    } 
   };
 
   const openEditForm = () => {
@@ -81,6 +107,12 @@ export function Cabinet() {
     if (profile) {
       setIsBookingHistoryOpen(true);
     }
+  };
+
+  const openSubInfo = (sub: Subscription, subName: string) => {
+    SetCurrenSub(sub);
+    SetCurrenSubName(subName);
+    SetSubscriptionInfoOpen(true);
   };
 
   if (loading) {
@@ -121,6 +153,20 @@ export function Cabinet() {
         isOpen={isBookingHistoryOpen}
         onClose={() => setIsBookingHistoryOpen(false)}
         historyBookings={historyBookings}
+      />
+
+      <SubscriptionsContainer
+        UserSubscriptions={userSubscriptions}
+        phone={profile.phone}
+        openSubInfo={openSubInfo}
+      />
+      <SubscriptionInformation
+        isOpen={isSubscriptionInfoOpen}
+        onClose={() => {
+          SetSubscriptionInfoOpen(false);
+        }}
+        sub={currenSub}
+        subName={currenSubName}
       />
     </div>
   );
