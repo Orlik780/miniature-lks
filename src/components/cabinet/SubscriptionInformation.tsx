@@ -72,7 +72,7 @@ export const SubscriptionInformation: React.FC<
               }}
               className="status"
             >
-              {sub.status === "ACTIVE" ? "Активен" : "Истек"}
+              {sub.status === "ACTIVE" ? "Активен" : sub.activationDate == null ? "Не активирован" : "Истек"}
             </span>
           </div>
 

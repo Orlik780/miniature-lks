@@ -6,12 +6,14 @@ interface SubscriptionsContainerProps {
   UserSubscriptions: SubscriptionResponse | null;
   phone: string;
   openSubInfo: (sub: Subscription, subName: string) => void;
+  openBuy: () => void;
 }
 
 export function SubscriptionsContainer({
   UserSubscriptions,
   phone,
-  openSubInfo
+  openSubInfo,
+  openBuy
 }: SubscriptionsContainerProps) {
   if (!UserSubscriptions || UserSubscriptions.content.length === 0) return null;
 
@@ -25,6 +27,7 @@ export function SubscriptionsContainer({
           openSubInfo={openSubInfo}
         />
       ))}
+      <button className="button" onClick={() => {openBuy()}}>Купить абонимент</button>
     </div>
   );
 }

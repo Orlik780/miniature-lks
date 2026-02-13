@@ -18,6 +18,7 @@ import { BookingsContainer } from "./BookingsContainer";
 import { BookingHistory } from "./BookingHistory";
 import { SubscriptionsContainer } from "./SubscriptionsContainer";
 import { SubscriptionInformation } from "./SubscriptionInformation";
+import { BuySupscription } from "./BuySubscription";
 
 export function Cabinet() {
   const [profile, setProfile] = useState<UserProfileType | null>(null);
@@ -34,6 +35,7 @@ export function Cabinet() {
   const [isSubscriptionInfoOpen, SetSubscriptionInfoOpen] = useState(false);
   const [currenSub, SetCurrenSub] = useState<Subscription | null>(null);
   const [currenSubName, SetCurrenSubName] = useState<string>("Абонемент");
+  const [isOpenBuySub, setOpenBuySub] = useState<boolean>(false);
   const { logout } = useAuth();
 
   useEffect(() => {
@@ -159,6 +161,7 @@ export function Cabinet() {
         UserSubscriptions={userSubscriptions}
         phone={profile.phone}
         openSubInfo={openSubInfo}
+        openBuy={() => {setOpenBuySub(true)}}
       />
       <SubscriptionInformation
         isOpen={isSubscriptionInfoOpen}
@@ -168,6 +171,7 @@ export function Cabinet() {
         sub={currenSub}
         subName={currenSubName}
       />
+      <BuySupscription isOpen={isOpenBuySub} onClose={() => {setOpenBuySub(false)}} phone={profile.phone}/>
     </div>
   );
 }

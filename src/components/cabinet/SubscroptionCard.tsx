@@ -120,7 +120,7 @@ export function SubscroptionCard({
           }}
           className="status-badge"
         >
-          {subscription.status === "ACTIVE" ? "Активен" : "Истек"}
+          {subscription.status === "ACTIVE" ? "Активен" : subscription.activationDate == null ? "Не активирован" : "Истек"}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { getCookie } from "./cookies";
-import { TENANT_KEY, API_BASE, SERV2} from "../consts/api";
+import { TENANT_KEY, API_BASE, SERV2 } from "../consts/api";
 
 export interface UserProfileType {
   id: string;
@@ -430,31 +430,87 @@ export const uploadSubscriptions =
     }
   };
 
-  export const fetchSubscriptioName =
-  async (subId: string, phone: string): Promise<string | null> => {
+export const fetchSubscriptioName = async (
+  subId: string,
+  phone: string,
+): Promise<string | null> => {
+  const url = `${SERV2}/get_sub_name?phone=${phone}&subId=${subId}`;
 
-    const url = `${SERV2}/get_sub_name?phone=${phone}&subId=${subId}`;
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          return null;
-        }
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Ошибка получения названия абика");
+    if (!res.ok) {
+      if (res.status === 401) {
+        return null;
       }
-
-      const result = await res.json();
-      return result.sertName || null;
-    } catch (err) {
-      console.error("Не получить название абика:", err);
-      return null;
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Ошибка получения названия абика");
     }
-  };
+
+    const result = await res.json();
+    return result.sertName || null;
+  } catch (err) {
+    console.error("Не получить название абика:", err);
+    return null;
+  }
+};
+
+export const buySubscroption = async (
+  subscroptionId: string,
+  phone: string,
+): Promise<string | null> => {
+  const token = getCookie(`${TENANT_KEY}AuthToken`);
+  if (!token) return null;
+
+  const url = `${API_BASE}/end-user/api/v1/iSkq6G/transactions`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        clientPhone: phone,
+        failUrl: "http://localhost:5173/miniature-lks/",
+        paymentMethod: "WIDGET",
+        products: [
+          {
+            id: subscroptionId,
+            type: "SUBSCRIPTION",
+            count: 1,
+          },
+        ],
+        "0": {
+          id: subscroptionId,
+          type: "SUBSCRIPTION",
+          count: 1,
+        },
+        count: 1,
+        id: subscroptionId,
+        type: "SUBSCRIPTION",
+        successUrl: "http://localhost:5173/miniature-lks/",
+      }),
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        return null;
+      }
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Ошибка покупки абонемента");
+    }
+
+    const result = await res.json();
+    return result.paymentUrl || null;
+  } catch (err) {
+    console.error("Не удалось купить абонемент:", err);
+    return null;
+  }
+};
