@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { getCookie, setCookie, deleteCookie } from "../utils/cookies";
-import { TENANT_KEY, KEYCLOACK_BASE } from "../consts/api";
+import { TENANT_KEY, KEYCLOAK_BASE } from "../consts/api_config";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setPhone(phoneNumber);
     try {
       const res = await fetch(
-        `${KEYCLOACK_BASE}/realms/prod/sms/authentication-code?phoneNumber=${phoneNumber}&channel=${channel}&tenantKey=${TENANT_KEY}`,
+        `${KEYCLOAK_BASE}/realms/prod/sms/authentication-code?phoneNumber=${phoneNumber}&channel=${channel}&tenantKey=${TENANT_KEY}`,
         { method: "GET" },
       );
       if (res.ok) {
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       const res = await fetch(
-        `${KEYCLOACK_BASE}/realms/prod/protocol/openid-connect/token`,
+        `${KEYCLOAK_BASE}/realms/prod/protocol/openid-connect/token`,
         {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -1,5 +1,5 @@
 import { getCookie } from "./cookies";
-import { TENANT_KEY, API_BASE, SERV2 } from "../consts/api";
+import { TENANT_KEY, API_BASE, SERV2 } from "../consts/api_config";
 
 export interface UserProfileType {
   id: string;
@@ -37,7 +37,7 @@ export interface SubscriptionAvailableDirections {
 export interface Subscription {
   subscriptionId: string;
   name: string | null;
-  cost: 0;
+  cost: number;
   type: string;
   status: string;
   purchaseDate: string;
@@ -65,6 +65,42 @@ export interface Subscription {
   availableMinutes: number;
   duration: string;
   availableDays: string;
+}
+
+export interface AdvertisementType {
+  imgUrl: string;
+  href: string;
+}
+export interface apiSubscription {
+  id: string;
+  productType: string;
+  name: string;
+  cost: number;
+  discountPrice: number;
+  bonusPoints: number;
+  showToUser: boolean;
+  type: string;
+  activationDays: number;
+  validityDays: number;
+  freezingDays: number;
+  hasStudioLimitation: boolean;
+  availableStudios: SubscriptionAvailableStudios[];
+  hasTypeLimitation: boolean;
+  availableTypes: SubscriptionAvailableTypes[];
+  hasDirectionLimitation: boolean;
+  availableDirections: SubscriptionAvailableDirections[];
+  hasDayLimitation: boolean;
+  availableDaysOfWeek: [];
+  hasTimeRangeLimitation: boolean;
+  availableTimeRanges: [];
+  variant: string;
+  visits: number;
+  timeLimitation: string;
+  minutes: number;
+  duration: string;
+  photos: [];
+  nameInReceipt: string | null;
+  imgUrl: string;
 }
 
 export interface SubscriptionResponse {
@@ -208,274 +244,243 @@ export interface UpdateProfileData {
   sex: string | null;
 }
 
-export const fetchProfile = async (): Promise<UserProfileType | null> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return null;
+export interface SubscriptionName {
+  sertName: string;
+}
 
-  try {
-    const res = await fetch(
-      `${API_BASE}/end-user/api/v1/${TENANT_KEY}/profile`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
+export interface PaymentUrl {
+  toPay: number;
+  paymentUrl: string;
+}
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      throw new Error("Ошибка загрузки профиля");
-    }
+export type ApiStatus = number | null;
 
-    return await res.json();
-  } catch (err) {
-    console.error("Не удалось загрузить профиль:", err);
-    return null;
-  }
-};
+export interface ApiError {
+  status: ApiStatus;
+  message: string;
+  raw?: unknown;
+}
 
-export const updateProfile = async (
-  data: UpdateProfileData,
-): Promise<UserProfileType | null> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return null;
+export interface ApiResult<T> {
+  data: T | null;
+  error: ApiError | null;
+  status: ApiStatus;
+}
 
-  try {
-    const res = await fetch(
-      `${API_BASE}/end-user/api/v1/${TENANT_KEY}/profile`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      },
-    );
+interface RequestOptions extends RequestInit {
+  auth?: boolean;
+  retries?: number;
+  baseUrl?: string;
+  signal?: AbortSignal
+}
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка обновления профиля");
-    }
+async function rawRequest<T>(
+  url: string,
+  options: RequestOptions = {},
+): Promise<ApiResult<T>> {
+  const { auth = false, baseUrl = API_BASE, ...fetchOptions } = options;
 
-    return await res.json();
-  } catch (err) {
-    console.error("Не удалось обновить профиль:", err);
-    return null;
-  }
-};
+  const headers = new Headers(fetchOptions.headers ?? {});
 
-export const uploadProfilePhoto = async (
-  file: File,
-): Promise<string | null> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return null;
-
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch(
-      `${API_BASE}/end-user/api/v1/${TENANT_KEY}/profile/photo`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      },
-    );
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка загрузки фотографии");
-    }
-
-    const result = await res.text();
-    return result || null;
-  } catch (err) {
-    console.error("Не удалось загрузить фотографию:", err);
-    return null;
-  }
-};
-
-/*export const updateProfileWithPhoto = async (
-  profileData: Omit<UpdateProfileData, "photo">,
-  photoFile?: File
-): Promise<UserProfile | null> => {
-  try {
-    let photoUrl: string | null = null;
-    
-    if (photoFile) {
-      photoUrl = await uploadProfilePhoto(photoFile);
-      if (!photoUrl) {
-        throw new Error("Не удалось загрузить фотографию");
-      }
-    }
-
-    const updatedProfile = await updateProfile({
-      ...profileData,
-      photo: photoUrl,
-    });
-
-    return updatedProfile;
-  } catch (err) {
-    console.error("Не удалось обновить профиль с фотографией:", err);
-    return null;
-  }
-};*/
-
-export const uploadBookings = async (
-  includeCanceled: boolean,
-): Promise<BookingsResponse | null> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return null;
-
-  const url = includeCanceled
-    ? `${API_BASE}/end-user/api/v2/${TENANT_KEY}/bookings/history?includeCanceled=true&size=1000`
-    : `${API_BASE}/end-user/api/v2/${TENANT_KEY}/bookings?size=1000`;
-
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка загрузки занятий");
-    }
-
-    const result = await res.json();
-    return result || null;
-  } catch (err) {
-    console.error("Не удалось загрузить занятия:", err);
-    return null;
-  }
-};
-
-export const cancelBooking = async (bookingId: string): Promise<boolean> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return false;
-
-  const url = `${API_BASE}/end-user/api/v1/${TENANT_KEY}/bookings/${bookingId}`;
-
-  try {
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        return false;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка отмены записи");
-    }
-
-    return true;
-  } catch (err) {
-    console.error("Не удалось отменить запись:", err);
-    return false;
-  }
-};
-
-export const uploadSubscriptions =
-  async (): Promise<SubscriptionResponse | null> => {
+  if (auth) {
     const token = getCookie(`${TENANT_KEY}AuthToken`);
-    if (!token) return null;
-
-    const url = `${API_BASE}/end-user/api/v1/${TENANT_KEY}/subscriptions`;
-
-    try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          return null;
-        }
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Ошибка отмены записи");
-      }
-
-      const result = await res.json();
-      return result || null;
-    } catch (err) {
-      console.error("Не удалось отменить запись:", err);
-      return null;
+    if (!token) {
+      return {
+        data: null,
+        error: { status: 401, message: "Не авторизован" },
+        status: 401,
+      };
     }
-  };
+    if (!headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
 
-export const fetchSubscriptioName = async (
-  subId: string,
-  phone: string,
-): Promise<string | null> => {
-  const url = `${SERV2}/get_sub_name?phone=${phone}&subId=${subId}`;
+  if (
+    fetchOptions.body &&
+    !headers.has("Content-Type") &&
+    !(fetchOptions.body instanceof FormData)
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const fullUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
+
+  let response: Response;
 
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка получения названия абика");
-    }
-
-    const result = await res.json();
-    return result.sertName || null;
+    response = await fetch(fullUrl, { ...fetchOptions, headers });
   } catch (err) {
-    console.error("Не получить название абика:", err);
-    return null;
+    return {
+      data: null,
+      error: { status: null, message: "Ошибка сети", raw: err },
+      status: null,
+    };
   }
-};
 
-export const buySubscroption = async (
+  const status = response.status;
+
+  let payload: any = null;
+  const contentType = response.headers.get("Content-Type") || "";
+  if (contentType.includes("application/json")) {
+    payload = await response.json().catch(() => null);
+  } else {
+    payload = await response.text().catch(() => null);
+  }
+
+  if (!response.ok) {
+    const message =
+      (payload && (payload.message || payload.error_description)) ||
+      `Ошибка запроса (${status})`;
+
+    return {
+      data: null,
+      error: { status, message, raw: payload },
+      status,
+    };
+  }
+
+  return {
+    data: (payload as T) ?? null,
+    error: null,
+    status,
+  };
+}
+
+export async function request<T>(
+  url: string,
+  options: RequestOptions = {},
+): Promise<ApiResult<T>> {
+  const { retries = 0 } = options;
+  if (retries > 0) {
+    return withRetry(() => rawRequest<T>(url, options), { retries });
+  }
+  return rawRequest<T>(url, options);
+}
+
+async function withRetry<T>(
+  fn: () => Promise<ApiResult<T>>,
+  {
+    retries = 2,
+    baseDelayMs = 300,
+  }: { retries?: number; baseDelayMs?: number } = {},
+): Promise<ApiResult<T>> {
+  let attempt = 0;
+  while (true) {
+    console.log(attempt);
+    try {
+      const res = await fn();
+      if (res.status !== 200 && res.status !== 204 && res.status !== 304) {
+        attempt++;
+        if (attempt > retries) {
+          return res;
+        }
+        const delay = baseDelayMs * 2 ** (attempt - 1);
+        await new Promise((res) => setTimeout(res, delay));
+      } else {
+        return res;
+      }
+    } catch (err) {
+      attempt++;
+      if (attempt > retries) {
+        return {
+          data: null,
+          error: { status: null, message: "Ошибка сети", raw: err },
+          status: null,
+        };
+      }
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      await new Promise((res) => setTimeout(res, delay));
+    }
+  }
+}
+
+export async function apiFetchProfile() {
+  return request<UserProfileType>(`/end-user/api/v1/${TENANT_KEY}/profile`, {
+    method: "GET",
+    auth: true,
+    retries: 1,
+  });
+}
+
+export async function apiUpdateProfile(data: UpdateProfileData) {
+  return request<UserProfileType>(`/end-user/api/v1/${TENANT_KEY}/profile`, {
+    method: "PATCH",
+    auth: true,
+    retries: 1,
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiUploadProfilePhoto(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<string>(
+    `${API_BASE}/end-user/api/v1/${TENANT_KEY}/profile/photo`,
+    {
+      method: "PUT",
+      auth: true,
+      retries: 1,
+      body: formData,
+    },
+  );
+}
+
+export async function apiFetchBookings(includeCanceled: boolean) {
+  const url = includeCanceled
+    ? `/end-user/api/v2/${TENANT_KEY}/bookings/history?includeCanceled=true&size=1000`
+    : `/end-user/api/v2/${TENANT_KEY}/bookings?size=1000`;
+
+  return request<BookingsResponse>(url, {
+    method: "GET",
+    auth: true,
+    retries: 1,
+  });
+}
+
+export async function apiCancelBooking(bookingId: string) {
+  return request<BookingsResponse>(
+    `${API_BASE}/end-user/api/v1/${TENANT_KEY}/bookings/${bookingId}`,
+    {
+      method: "DELETE",
+      auth: true,
+      retries: 1,
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function apiFetchSubscriptions() {
+  return request<SubscriptionResponse>(
+    `${API_BASE}/end-user/api/v1/${TENANT_KEY}/subscriptions`,
+    {
+      method: "GET",
+      auth: true,
+      retries: 1,
+    },
+  );
+}
+
+export async function apiFetchSubscriptioName(subId: string, phone: string) {
+  return request<SubscriptionName>(
+    `${SERV2}?type=get_sub_name&phone=${phone}&subId=${subId}`,
+    {
+      method: "GET",
+      retries: 1,
+    },
+  );
+}
+
+export async function apiBuySubscroption(
   subscroptionId: string,
   phone: string,
-): Promise<string | null> => {
-  const token = getCookie(`${TENANT_KEY}AuthToken`);
-  if (!token) return null;
-
-  const url = `${API_BASE}/end-user/api/v1/iSkq6G/transactions`;
-
-  try {
-    const res = await fetch(url, {
+) {
+  return request<PaymentUrl>(
+    `${API_BASE}/end-user/api/v1/iSkq6G/transactions`,
+    {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      auth: true,
+      retries: 1,
       body: JSON.stringify({
         clientPhone: phone,
         failUrl: "http://localhost:5173/miniature-lks/",
@@ -487,30 +492,25 @@ export const buySubscroption = async (
             count: 1,
           },
         ],
-        "0": {
-          id: subscroptionId,
-          type: "SUBSCRIPTION",
-          count: 1,
-        },
         count: 1,
         id: subscroptionId,
         type: "SUBSCRIPTION",
         successUrl: "http://localhost:5173/miniature-lks/",
       }),
-    });
+    },
+  );
+}
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        return null;
-      }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Ошибка покупки абонемента");
-    }
+export async function apiGetSubscriptionsForSale() {
+  return request<apiSubscription[]>(`${SERV2}?type=sub_for_sale`, {
+    method: "GET",
+    retries: 1,
+  });
+}
 
-    const result = await res.json();
-    return result.paymentUrl || null;
-  } catch (err) {
-    console.error("Не удалось купить абонемент:", err);
-    return null;
-  }
-};
+export async function apiGetAdvertisement() {
+  return request<AdvertisementType>(`${SERV2}?type=advertisement`, {
+    method: "GET",
+    retries: 1,
+  });
+}

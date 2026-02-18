@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Booking } from "../../utils/apiClient";
-import { cancelBooking } from "../../utils/apiClient";
+import { apiCancelBooking } from "../../utils/apiClient";
 
 interface BookingProps {
   booking: Booking;
@@ -18,8 +18,8 @@ export function BookingCard({ booking, active, loadBookings }: BookingProps) {
   const booking_time = `${booking.exercise?.timeFrom.slice(8, 10)}.${booking.exercise?.timeFrom.slice(5, 7)}.${booking.exercise?.timeFrom.slice(0, 4)} ${booking.exercise?.timeFrom.slice(11, 16)}-${booking.exercise?.timeTo.slice(11, 16)}`;
 
   const handleCancelClick = async () => {
-    const res = await cancelBooking(booking.id);
-    setCancelResult(res);
+    const res = await apiCancelBooking(booking.id);
+    setCancelResult(res.status === 200);
   };
   return (
     <div className="booking-card">

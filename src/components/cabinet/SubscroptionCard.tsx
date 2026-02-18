@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { fetchSubscriptioName } from "../../utils/apiClient";
+import { apiFetchSubscriptioName } from "../../utils/apiClient";
 import type { Subscription } from "../../utils/apiClient";
 
-interface SubscriptionsContainerProps {
+interface SubscroptionCardProps {
   subscription: Subscription;
   phone: string;
   openSubInfo: (sub: Subscription, subName: string) => void;
@@ -12,19 +12,19 @@ export function SubscroptionCard({
   subscription,
   phone,
   openSubInfo,
-}: SubscriptionsContainerProps) {
+}: SubscroptionCardProps) {
   const [subscriptionName, setSubscriptionName] = useState("Абонемент");
   const [tilt, setTilt] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadData = async () => {
-      const subscriptionData = await fetchSubscriptioName(
+      const subscriptionData = await apiFetchSubscriptioName(
         subscription.subscriptionId,
         phone,
       );
-      if (subscriptionData) {
-        setSubscriptionName(subscriptionData);
+      if (subscriptionData.data?.sertName) {
+        setSubscriptionName(subscriptionData.data?.sertName);
       }
     };
     loadData();

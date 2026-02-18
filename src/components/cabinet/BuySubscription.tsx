@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "../UI/Modal";
-import sub_krik from "../../assets/dr_krik.png";
-import sub_en5 from "../../assets/en5.jpg";
-import sub_en25 from "../../assets/en25.jpg";
-import { buySubscroption } from "../../utils/apiClient";
+import {
+  apiBuySubscroption,
+  apiGetSubscriptionsForSale,
+} from "../../utils/apiClient";
+import type { apiSubscription } from "../../utils/apiClient";
+import { BuySubscroptionCard } from "./BuySubscroptionCard";
 
 interface BuySubscriptionProps {
   isOpen: boolean;
@@ -16,59 +18,70 @@ export function BuySupscription({
   onClose,
   phone,
 }: BuySubscriptionProps) {
-  const [selectSub, setSelectSub] = useState<string | null>(null);
-  const [cost, setCost] = useState<number | null>(null);
+  const [subscriptions, setSubscriptions] = useState<apiSubscription[] | null>(
+    null,
+  );
+  const [selectedSub, setSelectedSub] = useState<apiSubscription | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const buySub = async () => {
-    if (selectSub === null) return;
-    const url = await buySubscroption(selectSub, phone);
-    if (url) {
-       window.location.href = url;
+  useEffect(() => {
+    if (isOpen && !subscriptions) {
+      fetchSubscriptions();
+    }
+  }, [isOpen]);
+
+  const fetchSubscriptions = async () => {
+    setLoading(true);
+    try {
+      const response = await apiGetSubscriptionsForSale();
+      if (response.data) {
+        setSubscriptions(response.data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectSubscription = (sub: apiSubscription) => {
+    setSelectedSub(sub);
+  };
+
+  const handleBuy = async () => {
+    if (!selectedSub) return;
+    try {
+      const response = await apiBuySubscroption(selectedSub.id, phone);
+      if (response.data?.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Абонементы">
-      <>
-        <div className="subBuyContainer">
-          <div
-            onClick={() => {
-              setCost(19800)
-              setSelectSub("dfa72adf-233b-4285-8d69-e5eab4234fbe");
-            }}
-            className="subBuyIMgContainer"
-            style={{ borderColor: selectSub == "dfa72adf-233b-4285-8d69-e5eab4234fbe" ? "#7270ff" : "#e9ecef" }}
-          >
-            <img src={sub_en5} className="subImg" alt="en5" />
+      {loading ? (
+        <p>Загрузка абонементов...</p>
+      ) : subscriptions && subscriptions.length > 0 ? (
+        <>
+          <div className="subBuyContainer">
+            {subscriptions.map((sub) => (
+              <BuySubscroptionCard key={sub.id} handleSelectSubscription={handleSelectSubscription} sub={sub} selectedSub={selectedSub}/>
+            ))}
+            {selectedSub && (
+              <div style={{ marginTop: "16px" }}>
+                <button onClick={handleBuy} className="button">
+                  Приобрести за {selectedSub.cost / 100} ₽
+                </button>
+              </div>
+            )}
           </div>
-          <div
-            onClick={() => {
-              setCost(10)
-              setSelectSub("9af17995-33cb-482f-8532-b5da7f8b5eb4");
-            }}
-            className="subBuyIMgContainer"
-            style={{ borderColor: selectSub == "9af17995-33cb-482f-8532-b5da7f8b5eb4" ? "#7270ff" : "#e9ecef" }}
-          >
-            <img src={sub_krik} className="subImg" alt="krik" />
-          </div>
-          <div
-            onClick={() => {
-              setCost(97000)
-              setSelectSub("9fb759fd-f70c-4395-84e7-57716df97e14");
-            }}
-            className="subBuyIMgContainer"
-            style={{ borderColor: selectSub == "9fb759fd-f70c-4395-84e7-57716df97e14" ? "#7270ff" : "#e9ecef" }}
-          >
-            <img src={sub_en25} className="subImg" alt="en25" />
-          </div>
-        </div>
-        <button
-          className="button"
-          onClick={() => {
-            buySub();
-          }}
-        >{cost !== null ? `Купить за ${cost}₽`:`Купить`}</button>
-      </>
+        </>
+      ) : (
+        <p>Нет доступных абонементов для покупки.</p>
+      )}
     </Modal>
   );
 }

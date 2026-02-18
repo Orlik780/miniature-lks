@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal } from "../UI/Modal";
-import { uploadProfilePhoto, updateProfile } from "../../utils/apiClient";
+import { apiUploadProfilePhoto, apiUpdateProfile } from "../../utils/apiClient";
 
 interface ProfileEditFormProps {
   isOpen: boolean;
@@ -44,16 +44,16 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     try {
       const file = e.target.files?.[0] || null;
 
-      let photoUrl: string | null = "";
+      //let photoUrl: string | null = "";
 
       if (file) {
-        photoUrl = await uploadProfilePhoto(file);
-        if (!photoUrl) {
+        const photoUrl = await apiUploadProfilePhoto(file);
+        if (!photoUrl.data) {
           throw new Error("Не удалось загрузить фотографию");
         }
         setFormData((prev) => ({
           ...prev,
-          ["photo"]: photoUrl ? photoUrl : "",
+          ["photo"]: photoUrl.data ? photoUrl.data : "",
         }));
       }
     } catch (err) {
@@ -68,7 +68,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     setError(null);
 
     try {
-      const updatedProfile = await updateProfile({
+      const updatedProfile = await apiUpdateProfile({
         email: formData.email.trim() || null,
         firstName: formData.firstName.trim() || null,
         lastName: formData.lastName.trim() || null,
@@ -77,7 +77,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         photo: formData.photo || null,
       });
 
-      if (updatedProfile) {
+      if (updatedProfile.status === 200) {
         onSaveSuccess();
         onClose();
       } else {

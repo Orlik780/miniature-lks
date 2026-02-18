@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { UserProfile } from "./UserProfile";
 import {
-  fetchProfile,
-  uploadBookings,
-  uploadSubscriptions,
+  apiFetchProfile,
+  apiFetchBookings,
+  apiFetchSubscriptions,
 } from "../../utils/apiClient";
 import type {
   UserProfileType,
@@ -19,6 +19,7 @@ import { BookingHistory } from "./BookingHistory";
 import { SubscriptionsContainer } from "./SubscriptionsContainer";
 import { SubscriptionInformation } from "./SubscriptionInformation";
 import { BuySupscription } from "./BuySubscription";
+import { Advertisement } from "./Advertisement";
 
 export function Cabinet() {
   const [profile, setProfile] = useState<UserProfileType | null>(null);
@@ -38,32 +39,32 @@ export function Cabinet() {
   const [isOpenBuySub, setOpenBuySub] = useState<boolean>(false);
   const { logout } = useAuth();
 
-  useEffect(() => {
+  /*useEffect(() => {
     const loadData = async () => {
       setLoading(true);
 
       try {
-        const profileData = await fetchProfile();
+        const profileData = await apiFetchProfile();
         if (profileData) {
-          setProfile(profileData);
+          setProfile(profileData.data);
         } else {
           logout();
           return;
         }
 
-        const activeBookingsData = await uploadBookings(false);
+        const activeBookingsData = await apiFetchBookings(false);
         if (activeBookingsData) {
-          setActiveBookings(activeBookingsData);
+          setActiveBookings(activeBookingsData.data);
         }
 
-        const historyBookingsData = await uploadBookings(true);
+        const historyBookingsData = await apiFetchBookings(true);
         if (historyBookingsData) {
-          setHistoryBookings(historyBookingsData);
+          setHistoryBookings(historyBookingsData.data);
         }
 
-        const userSubscriptionsData = await uploadSubscriptions();
-        if (userSubscriptionsData) {
-          setUserSubscriptions(userSubscriptionsData);
+        const userSubscriptionsData = await apiFetchSubscriptions();
+        if (userSubscriptionsData.data) {
+          setUserSubscriptions(userSubscriptionsData.data);
         }
       } catch (error) {
         console.error("Ошибка загрузки данных:", error);
@@ -73,30 +74,68 @@ export function Cabinet() {
     };
 
     loadData();
+  }, [logout]);*/
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [profileRes, activeRes, historyRes, subsRes] = await Promise.all([
+          apiFetchProfile(),
+          apiFetchBookings(false),
+          apiFetchBookings(true),
+          apiFetchSubscriptions(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (!profileRes?.data) {
+          logout();
+          return;
+        }
+
+        setProfile(profileRes.data);
+        setActiveBookings(activeRes?.data || null);
+        setHistoryBookings(historyRes?.data || null);
+        setUserSubscriptions(subsRes?.data || null);
+      } catch (error) {
+        if (isMounted) console.error("Ошибка загрузки:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [logout]);
 
   const loadProfile = async () => {
-    const data = await fetchProfile();
+    const data = await apiFetchProfile();
     if (data) {
-      setProfile(data);
+      setProfile(data.data);
     }
   };
 
   const loadBookings = async () => {
-    const activeBookingsData = await uploadBookings(false);
+    const [activeBookingsData, historyBookingsData, userSubscriptionsData] = await Promise.all([
+      apiFetchBookings(false),
+      apiFetchBookings(true),
+      apiFetchSubscriptions(),
+    ]);
     if (activeBookingsData) {
-      setActiveBookings(activeBookingsData);
+      setActiveBookings(activeBookingsData.data);
     }
-
-    const historyBookingsData = await uploadBookings(true);
     if (historyBookingsData) {
-      setHistoryBookings(historyBookingsData);
+      setHistoryBookings(historyBookingsData.data);
     }
-
-    const userSubscriptionsData = await uploadSubscriptions();
-    if (userSubscriptionsData) {
-      setUserSubscriptions(userSubscriptionsData);
-    } 
+    if (userSubscriptionsData.data) {
+      setUserSubscriptions(userSubscriptionsData.data);
+    }
   };
 
   const openEditForm = () => {
@@ -161,7 +200,9 @@ export function Cabinet() {
         UserSubscriptions={userSubscriptions}
         phone={profile.phone}
         openSubInfo={openSubInfo}
-        openBuy={() => {setOpenBuySub(true)}}
+        openBuy={() => {
+          setOpenBuySub(true);
+        }}
       />
       <SubscriptionInformation
         isOpen={isSubscriptionInfoOpen}
@@ -171,7 +212,15 @@ export function Cabinet() {
         sub={currenSub}
         subName={currenSubName}
       />
-      <BuySupscription isOpen={isOpenBuySub} onClose={() => {setOpenBuySub(false)}} phone={profile.phone}/>
+      <BuySupscription
+        isOpen={isOpenBuySub}
+        onClose={() => {
+          setOpenBuySub(false);
+        }}
+        phone={profile.phone}
+      />
+
+      <Advertisement />
     </div>
   );
 }

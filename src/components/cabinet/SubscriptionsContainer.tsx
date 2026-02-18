@@ -15,11 +15,10 @@ export function SubscriptionsContainer({
   openSubInfo,
   openBuy
 }: SubscriptionsContainerProps) {
-  if (!UserSubscriptions || UserSubscriptions.content.length === 0) return null;
 
   return (
     <div className="lk-module booking-active-container">
-      {UserSubscriptions.content.map((sub) => (
+      {UserSubscriptions?.content && UserSubscriptions.content.map((sub) => (
         <SubscroptionCard
           key={sub.subscriptionId}
           subscription={sub}
